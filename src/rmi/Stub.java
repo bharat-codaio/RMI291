@@ -162,7 +162,7 @@ public abstract class Stub
         {
             throw new NullPointerException("address is null");
         }
-        if( !isRemoteInterface(c) )
+        if( !Validation.isRemoteInterface(c) )
         {
             throw new Error("Object's Class Does Not Represent a Remote Interface");
         }
@@ -180,14 +180,6 @@ public abstract class Stub
         }
     }
 
-
-    //TODO:
-    //TODO: Check to make sure that this works
-    //TODO:
-    private static boolean isRemoteInterface(Class c)
-    {
-        return  Remote.class.isAssignableFrom(c) ;
-    }
 
 
 }
