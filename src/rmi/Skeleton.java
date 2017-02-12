@@ -12,6 +12,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.UUID;
@@ -46,6 +47,8 @@ public class Skeleton<T>
     private T server;
     private InetSocketAddress sockAdr;
     private LinkedList<Thread> threads = new LinkedList<Thread>();
+    private Thread mainThread = null;
+    private boolean shouldMainKeepRunning;
     private SkeletonService<T> skeletonService = new SkeletonService<>();
     private Class<T> c; // class
     private Hashtable<Proxy, Object> mm = new Hashtable<>();
@@ -73,7 +76,7 @@ public class Skeleton<T>
     {
         if (c == null) throw new NullPointerException("c == null");
         if (server == null) throw new NullPointerException("server == null");
-        if ( !Remote.class.isAssignableFrom(c) )
+        if ( !Validation.isRemoteInterface(c) )
             throw new Error("server's Class does not implement Remote");
         this.server = server;
         this.c = c;
@@ -101,7 +104,8 @@ public class Skeleton<T>
     public Skeleton(Class<T> c, T server, InetSocketAddress address)
     {
         if (c == null) throw new NullPointerException("c == null");
-        if (!Remote.class.isAssignableFrom(c))
+        if (server == null) throw new NullPointerException("server == null");
+        if (!Validation.isRemoteInterface(c))
             throw new Error("server's Class does not implement Remote");
         this.server = server;
         this.c = c;
@@ -191,7 +195,7 @@ public class Skeleton<T>
                 // Create a ServerSocket
                 ServerSocket serverSocket = new ServerSocket(port, 0, address);
                 // Initiate endless listen loop
-                while (true)
+                while (this.shouldMainKeepRunning)
                 {
                     // Get a socket connection if you can
                     Socket socket = serverSocket.accept();
@@ -209,7 +213,10 @@ public class Skeleton<T>
                 listen_error(e);
             }
         });
-        threads.add(main);
+
+        this.mainThread = main;
+        this.shouldMainKeepRunning = true;
+        main.run();
     }
 
 
@@ -224,7 +231,7 @@ public class Skeleton<T>
      */
     public synchronized void stop()
     {
-        throw new UnsupportedOperationException("not implemented");
+        this.shouldMainKeepRunning = false;
     }
 
     Runnable createHandler(Lock lock, Class<T> c, T server,
@@ -258,6 +265,7 @@ public class Skeleton<T>
         };
         return runnable;
     }
+
 
     /**
      * Gets the InetSocketAddress associated with the server the skeleton is
