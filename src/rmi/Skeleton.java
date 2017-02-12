@@ -47,11 +47,12 @@ public class Skeleton<T>
     private T server;
     private InetSocketAddress sockAdr;
     private LinkedList<Thread> threads = new LinkedList<Thread>();
-    private Thread mainThread = null;
-    private boolean shouldMainKeepRunning;
+    private Thread listenerThread = null;
+    private boolean hasStarted = false;
+    private boolean shouldListenerRun;
+    private ServerSocket serverSocket;
     private SkeletonService<T> skeletonService = new SkeletonService<>();
     private Class<T> c; // class
-    private Hashtable<Proxy, Object> mm = new Hashtable<>();
 
     /** Creates a <code>Skeleton</code> with no initial server address. The
      address will be determined by the system when <code>start</code> is
@@ -151,6 +152,10 @@ public class Skeleton<T>
      */
     protected boolean listen_error(Exception exception)
     {
+        System.err.println("listen_error()");
+        System.err.println("Exception: " + exception.getClass());
+        System.err.println("Cause: " + exception.getCause());
+        exception.printStackTrace();
         return false;
     }
 
@@ -188,35 +193,42 @@ public class Skeleton<T>
 
 
         // Create thread to listen for connection requests
-        Thread main = new Thread(() -> {
-            InetAddress address = sockAdr.getAddress();
-            int port = sockAdr.getPort();
-            try {
-                // Create a ServerSocket
-                ServerSocket serverSocket = new ServerSocket(port, 0, address);
-                // Initiate endless listen loop
-                while (this.shouldMainKeepRunning)
-                {
-                    // Get a socket connection if you can
-                    Socket socket = serverSocket.accept();
-                    // Generate a handler for that connection
-                    Runnable runnable = createHandler(lock, c, server, mm,
-                            socket);
-                    // Create a thread for that handler
-                    Thread thread = new Thread(runnable);
-                    // Add the thread to the linked list of threads
-                    threads.add(thread);
-                    // Start the thread for the handler
-                    thread.start();
+        Thread listener = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                InetAddress address = sockAdr.getAddress();
+                int port = sockAdr.getPort();
+                try {
+                    // Create a ServerSocket
+                    serverSocket = new ServerSocket(port, 0, address);
+                    // Initiate endless listen loop
+                    while (shouldListenerRun)
+                    {
+                        // Get a socket connection if you can
+                        Socket socket = serverSocket.accept();
+                        // Generate a handler for that connection
+                        Runnable clientRunnable = createHandler(lock, c, server, socket);
+                        // Create a thread for that handler
+                        Thread thread = new Thread(clientRunnable);
+                        // Add the thread to the linked list of threads
+                        threads.add(thread);
+                        // Start the thread for the handler
+                        thread.start();
+                    }
+                } catch (Exception e) {
+                    lock.lock();
+                    listen_error(e);
+                    stopped(e.getCause());
+                    lock.unlock();
                 }
-            } catch (IOException e) {
-                listen_error(e);
+
             }
         });
 
-        this.mainThread = main;
-        this.shouldMainKeepRunning = true;
-        main.run();
+        this.hasStarted = true;
+        this.shouldListenerRun = true;
+        this.listenerThread = listener;
+        listener.start();
     }
 
 
@@ -231,11 +243,37 @@ public class Skeleton<T>
      */
     public synchronized void stop()
     {
-        this.shouldMainKeepRunning = false;
+        if (!this.hasStarted) return;
+        try
+        {
+            // Server should stop listening for incoming socket connections
+            this.shouldListenerRun = false;
+            // Join all the child threads
+            for (Thread thread: this.threads) thread.join();
+            // If we have a listener thread
+            if (this.listenerThread != null)
+            {
+                // Join, close, and note its not started anymore
+                this.listenerThread.join();
+                this.serverSocket.close();
+                this.hasStarted = false;
+                this.listenerThread = null;
+            }
+            this.threads.clear();
+            this.lock.lock();
+            stopped(null);
+            this.lock.unlock();
+        }
+        catch (Exception e)
+        {
+            this.lock.lock();
+            listen_error(e);
+            stopped(e.getCause());
+            this.lock.unlock();
+        }
     }
 
-    Runnable createHandler(Lock lock, Class<T> c, T server,
-                           Hashtable<Proxy, Object> mm, Socket socket)
+    Runnable createHandler(Lock lock, Class<T> c, T server, Socket socket)
     {
         Runnable runnable = () -> {
             try {
@@ -251,8 +289,7 @@ public class Skeleton<T>
                 Shuttle shuttle = (Shuttle) ois.readObject();
 
                 // handle a call from Stub for a methodCall
-                skeletonService.handleMethodCall(lock, c, server, mm, socket,
-                        oos, shuttle);
+                skeletonService.handleMethodCall(lock, c, server, socket, oos, shuttle);
 
             }
             catch (RMIException e)

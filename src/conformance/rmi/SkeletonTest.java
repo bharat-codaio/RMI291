@@ -134,8 +134,11 @@ public class SkeletonTest extends Test
     @Override
     protected void clean()
     {
+        System.out.println("before stop()");
         skeleton.stop();
+        System.out.println("after stop() before wake()");
         wake();
+        System.out.println("after wake()");
     }
 
     /** Ensures that a <code>Skeleton</code> cannot be constructed from a class

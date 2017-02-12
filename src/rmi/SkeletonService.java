@@ -20,15 +20,13 @@ public class SkeletonService<T> {
 
 
 
-    void handleMethodCall(Lock lock, Class<T> c, T server,
-                          Hashtable<Proxy, Object> mm, Socket socket,
-                          ObjectOutputStream oos, Shuttle shuttle)
+    void handleMethodCall(Lock lock, Class<T> c, T server, Socket socket, ObjectOutputStream oos,
+                          Shuttle shuttle)
             throws IllegalAccessException, IOException, InstantiationException,
             RMIException, InvocationTargetException
     {
         try
         {
-            lock.lock();
             if (shuttle == null)
             {
                 throw new RMIException("shuttle == null");
@@ -47,13 +45,14 @@ public class SkeletonService<T> {
                 Object arg = shuttle.args[i].getValue();
                 arguments[i] = arg;
             }
+            lock.lock();
             Object returnValue = method.invoke(server, arguments);
+            lock.unlock();
             Return ret = new Return(method.getGenericReturnType(), returnValue);
             oos.writeObject(ret);
             oos.flush();
             oos.close();
             socket.close();
-            lock.unlock();
         }
         catch (Exception e)
         {
