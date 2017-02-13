@@ -76,7 +76,7 @@ public class StubTest extends Test
 
     /** Performs the test. */
     @Override
-    protected void perform() throws TestFailed
+    protected void perform() throws Throwable
     {
         System.err.println("perform()");
         ensureUnknownHostRejected();
@@ -375,7 +375,7 @@ public class StubTest extends Test
 
         @throws TestFailed If the test fails.
      */
-    private void ensureLocalMethods() throws TestFailed
+    private void ensureLocalMethods() throws Throwable
     {
         System.err.println("ensureLocalMethods()");
         // Create two stubs for the same skeleton.
@@ -396,16 +396,7 @@ public class StubTest extends Test
         // reserved port range, so it is not one of the ports that the system
         // may automatically assign to the other skeletons (and therefore the
         // other two stubs).
-        // TODO: WE MADE THE TRY CATCH
-        TestInterface stub3 = null;
-        try
-        {
-            stub3 = Stub.create(TestInterface.class, new InetSocketAddress(80));
-        }
-        catch (Throwable t)
-        {
-            System.err.println("stub3 caught throwable");
-        }
+        TestInterface stub3 = Stub.create(TestInterface.class, new InetSocketAddress(80));
 
         // Check that stubs are not equal to null.
         try

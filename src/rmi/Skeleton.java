@@ -2,9 +2,8 @@ package rmi;
 
 import javafx.util.Pair;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
@@ -87,6 +86,8 @@ public class Skeleton<T>
         this.c = c;
         this.isLocalHost = true;
         this.whichConstructor = "Skeleton(Class<T> c, T server)";
+        System.err.println("Skeleton Created with constructor:");
+        System.err.println(this.whichConstructor);
     }
 
     /** Creates a <code>Skeleton</code> with the given initial server address.
@@ -120,10 +121,13 @@ public class Skeleton<T>
         else
         {
             this.socketAddress = address;
+            this.port = address.getPort();
         }
         this.server = server;
         this.c = c;
         this.whichConstructor = "Skeleton(Class<T> c, T server, InetSocketAddress address)";
+        System.err.println("Skeleton Created with constructor:");
+        System.err.println(this.whichConstructor);
     }
 
     /** Called when the listening thread exits.
@@ -146,6 +150,8 @@ public class Skeleton<T>
      */
     protected void stopped(Throwable cause)
     {
+        System.err.println("stopped() - Thread[" + Thread.currentThread().getId() + "]");
+        this.isStarted = false;
     }
 
     /** Called when an exception occurs at the top level in the listening
@@ -165,12 +171,10 @@ public class Skeleton<T>
      */
     protected boolean listen_error(Exception exception)
     {
-        lock.lock();
         this.isStarted = false;
-        System.err.println("listen_error()");
+        System.err.println("listen_error() - Thread[" + Thread.currentThread().getId() + "]");
         System.err.println("Exception: " + exception.getClass());
         System.err.println("Cause: " + exception.getCause());
-        lock.unlock();
         exception.printStackTrace();
         return false;
     }
@@ -184,7 +188,9 @@ public class Skeleton<T>
      */
     protected void service_error(RMIException exception)
     {
-        System.err.println("[ERROR] service_error");
+        System.err.println("service_error() - Thread[" + Thread.currentThread().getId() + "]");
+        System.err.println("Exception: " + exception.getClass());
+        System.err.println("Cause: " + exception.getCause());
         exception.printStackTrace();
     }
 
@@ -203,7 +209,8 @@ public class Skeleton<T>
      */
     public synchronized void start() throws RMIException
     {
-        System.err.println("start()");
+        System.err.println("start() - Thread[" + Thread.currentThread().getId() + "]");
+        print();
         if (this.isStarted()) throw new RMIException("skeleton already started");
         try
         {
@@ -226,9 +233,6 @@ public class Skeleton<T>
             public void run() {
                 try
                 {
-                    lock.lock();
-                    print();
-                    lock.unlock();
                     while (!Thread.currentThread().isInterrupted())
                     {
                         Socket socket = serverSocket.accept();
@@ -236,18 +240,21 @@ public class Skeleton<T>
                             currentlyInvoking, c, server, socket);
                         Thread thread = new Thread(clientRunnable);
                         threads.add(thread);
-                        System.err.println("thread - " + thread.getId());
-                        System.err.println("Socket Accepted Service Thread -- threads = " + threads.size());
                         thread.start();
                     }
                 }
                 catch (IOException e)
                 {
+                    if (Thread.currentThread().isInterrupted())
+                    {
+                        // We caused this exception
+                        return;
+                    }
                     RMIException rmiException = new RMIException(e.getMessage(), e.getCause());
-                    lock.lock();
+                    rmiException.printStackTrace();
+                    System.err.println("[ERROR] - RMIException: " + rmiException.getCause());
                     listen_error(rmiException);
                     isStarted = false;
-                    lock.unlock();
                     return;
                 }
 
@@ -261,7 +268,7 @@ public class Skeleton<T>
     private InetSocketAddress determineAddress(boolean isLocalHost, InetSocketAddress socketAddress)
         throws UnknownHostException, RMIException
     {
-        System.err.println("determineAddress()");
+        System.err.println("determineAddress() - Thread[" + Thread.currentThread().getId() + "]");
         if (isLocalHost)
         {
             System.err.println("isLocalHost = true");
@@ -286,8 +293,11 @@ public class Skeleton<T>
      */
     public synchronized void stop()
     {
-        System.err.println("stop()");
-        if (!this.isStarted()) return;
+        System.err.println("stop() - Thread[" + Thread.currentThread().getId() + "]");
+        if (!this.isStarted()) {
+            System.err.println("Thread[" + Thread.currentThread().getId() + "] - not stopping, already stopped");
+            return;
+        }
         try
         {
             for (Thread thread : this.threads) thread.join();
@@ -320,6 +330,7 @@ public class Skeleton<T>
         catch (Exception e)
         {
             RMIException rmiException = new RMIException(e);
+            System.err.println("[ERROR - rmiException] - " + rmiException.getCause());
             service_error(rmiException);
         }
 
@@ -328,54 +339,47 @@ public class Skeleton<T>
     Runnable createHandler(Lock lock, Condition methodInvoking, int currentlyInvoking, Class<T> c,
                            T server, Socket socket)
     {
+        System.err.println("createHandler()");
         Runnable runnable = () -> {
             try {
+                System.err.println("111111111111111111111");
                 Thread current = Thread.currentThread();
-                // Create an ObjectOutputStream
+                System.err.println("22222222222222222222");
                 ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-
-                // Flush the ObjectOutputStream
+                System.err.println("33333333333333333333");
                 oos.flush();
-                // Create an ObjectInputStream
+                System.err.println("44444444444444444444");
                 ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
-                // Get the Shuttle
+                System.err.println("55555555555555555555");
                 Shuttle shuttle = (Shuttle) ois.readObject();
+                System.err.println("66666666666666666666");
 
                 // handle a call from Stub for a methodCall
+                System.err.println("BEFORE handleMethodCall()");
                 skeletonService.handleMethodCall(lock, methodInvoking, currentlyInvoking, c,
                     server, socket, oos, shuttle);
-                oos.flush();
-                oos.close();
-                ois.close();
-                int index = 0;
-                lock.lock();
-                for (Thread thread : threads)
-                {
-                    if (thread.hashCode() == Thread.currentThread().hashCode())
-                    {
-                        System.err.println("Removing thread: " + thread.getId());
-                        threads.remove(index);
-                        break;
-                    }
-                    index++;
-                }
-                System.err.println("createHandler() ---- socket.close()");
-                socket.close();
-                lock.unlock();
-
+                System.err.println("AFTER handleMethodCall()");
+            }
+            catch (ClassNotFoundException e)
+            {
+                RMIException rmiException = new RMIException(e.getMessage(), e.getCause());
+                service_error(rmiException);
+                System.err.println("[ERROR - ClassNotFoundException] - " + e.getCause());
+            }
+            catch (IOException e)
+            {
+                RMIException rmiException = new RMIException(e.getMessage(), e.getCause());
+                service_error(rmiException);
+                System.err.println("[ERROR - IOException] - " + e.getCause());
             }
             catch (RMIException e)
             {
                 service_error(e);
-                stopped(e.getCause());
+                System.err.println("[ERROR - rmiException] - " + e.getCause());
             }
-            catch (Exception e) {
-                RMIException rmiException = new RMIException(e.getMessage(), e.getCause());
-                System.err.println("rmiExcpetion");
-                System.err.println(rmiException.getMessage().toString());
-//                System.err.println(rmiException.getCause().toString());
-                service_error(rmiException);
-                stopped(rmiException.getCause());
+            catch (Exception e)
+            {
+
             }
         };
         return runnable;
@@ -394,7 +398,6 @@ public class Skeleton<T>
         {
             RMIException rmiException = new RMIException(e.getMessage(), e.getCause());
             service_error(rmiException);
-            stopped(rmiException.getCause());
             return null;
         }
     }

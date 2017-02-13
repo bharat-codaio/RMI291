@@ -5,6 +5,7 @@ import javafx.util.Pair;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -16,7 +17,7 @@ import java.net.Socket;
 /**
  * Created by bharatbatra on 2/5/17.
  */
-public class RemoteInvocationHandler<T> implements InvocationHandler
+public class RemoteInvocationHandler<T> implements InvocationHandler, Serializable
 {
     InetSocketAddress socketAddress;
     Class<T> c;
@@ -33,6 +34,8 @@ public class RemoteInvocationHandler<T> implements InvocationHandler
 
     public Object invoke(Object proxy, Method m, Object[] args)
         throws Throwable {
+        System.err.println("method: " + m.toString());
+
         String standardMethodResult = isStandardMethod(m);
         if (standardMethodResult != null)
         {
@@ -49,6 +52,7 @@ public class RemoteInvocationHandler<T> implements InvocationHandler
         {
             System.err.println("this.socketAddress: " + this.socketAddress.toString());
             socket = createSocketFromAddress(this.socketAddress);
+            System.err.println("socket: " + socket.toString());
         }
         catch (IOException e)
         {
@@ -97,7 +101,8 @@ public class RemoteInvocationHandler<T> implements InvocationHandler
                 throw ret.invocationTargetException;
             }
             System.err.println("hello5");
-            return result;
+            socket.close();
+            return ((Return) result).value;
         }
         catch (IOException e)
         {
@@ -109,15 +114,20 @@ public class RemoteInvocationHandler<T> implements InvocationHandler
         }
         catch (InvocationTargetException e)
         {
-            throw e.getTargetException().getCause();
+            throw e.getTargetException() != null
+                ? e.getTargetException().getCause()
+                : e;
         }
     }
 
     private static Socket createSocketFromAddress(InetSocketAddress socketAddress)
         throws IOException
     {
+        System.err.println("createSocketFromAddress");
         InetAddress adr = socketAddress.getAddress();
         int port = socketAddress.getPort();
+        System.err.println("address - " + adr.toString());
+        System.err.println("port - " + port);
         return new Socket(adr, port);
     }
 
@@ -137,9 +147,7 @@ public class RemoteInvocationHandler<T> implements InvocationHandler
         try
         {
             RemoteInvocationHandler rih = (RemoteInvocationHandler) ROR.getInvocationHandler(obj);
-            if (c.getClass() != rih.c.getClass()) return false;
-            if (this.skeleton == null && rih.skeleton != null) return false;
-            if (this.skeleton != null && rih.skeleton == null) return false;
+            if (c != rih.c) return false;
             return this.socketAddress.equals(rih.socketAddress);
         }
         catch (IllegalArgumentException e)
@@ -174,6 +182,8 @@ public class RemoteInvocationHandler<T> implements InvocationHandler
         // Parameter Type
         Type paramType = method.getGenericParameterTypes()[0];
         if (paramType.getTypeName().equals(this.getClass().getTypeName())) return false;
+        System.err.println("Method - " + method.toString());
+        System.err.println("isEquals()");
         return true;
     }
 
@@ -181,9 +191,12 @@ public class RemoteInvocationHandler<T> implements InvocationHandler
     {
         // Parameter number
         if (method.getParameterCount() != 0) return false;
+        System.out.println("PARAM COUNT : " + method.getParameterCount());
         // Return Type
         Method objectToString = getObjectMethod("toString");
         if (!isSameReturnType(method, objectToString)) return false;
+        System.err.println("Method - " + method.toString());
+        System.err.println("isToString()");
         return true;
     }
 
@@ -194,6 +207,8 @@ public class RemoteInvocationHandler<T> implements InvocationHandler
         // Return Type
         Method objectHashCode = getObjectMethod("hashCode");
         if (!isSameReturnType(method, objectHashCode)) return false;
+        System.err.println("Method - " + method.toString());
+        System.err.println("isHashCode()");
         return true;
     }
 

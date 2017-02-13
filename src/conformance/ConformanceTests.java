@@ -24,10 +24,12 @@ public class ConformanceTests
         // Create the test list, the series object, and run the test series.
         @SuppressWarnings("unchecked")
         Class<? extends Test>[]     tests =
-            new Class[] {conformance.rmi.SkeletonTest.class,
+            new Class[] {
+                conformance.rmi.SkeletonTest.class,
                          conformance.rmi.StubTest.class,
                          conformance.rmi.ConnectionTest.class,
-                         conformance.rmi.ThreadTest.class};
+                         conformance.rmi.ThreadTest.class
+            };
         Series                      series = new Series(tests);
         SeriesReport                report = series.run(3, System.out);
 

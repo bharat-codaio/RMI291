@@ -12,11 +12,13 @@ class Shuttle implements Serializable
 {
     int hashCode;
     Pair<Type, Object>[] args;
+    String methodString;
 
     Shuttle(Method method, Pair<Type, Object>[] args)
     {
         this.hashCode = method.hashCode();
         this.args = args;
+        this.methodString = method.toString();
     }
 }
 

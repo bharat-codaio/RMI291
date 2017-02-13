@@ -1,6 +1,7 @@
 package rmi;
 
 
+import java.io.Serializable;
 import java.lang.reflect.*;
 import java.net.*;
 
@@ -17,7 +18,7 @@ import java.net.*;
  same interface and carry the same remote server address - and would
  therefore connect to the same skeleton. Stubs are serializable.
  */
-public abstract class Stub
+public abstract class Stub implements Serializable
 {
     /** Creates a stub, given a skeleton with an assigned adress.
 
@@ -53,9 +54,9 @@ public abstract class Stub
         try
         {
             if (c == null) throw new NullPointerException("c is null");
+            if (!Validation.isRemoteInterface(c))
+                throw new Error("c is not a remote interface");
             if (skeleton == null) throw new NullPointerException("skeleton is null");
-            if (!skeleton.isStarted())
-                throw new IllegalStateException("skeleton not assigned address");
             InetAddress address = skeleton.getAddress();
             String ip = address.getHostAddress();
             if (ip.equals("0.0.0.0") && skeleton.getPort() != -1) {
@@ -113,6 +114,8 @@ public abstract class Stub
     {
         try {
             if (c == null) throw new NullPointerException("c is null");
+            if (!Validation.isRemoteInterface(c))
+                throw new Error("c is not a remote interface");
             if (skeleton == null) throw new NullPointerException("skeleton is null");
             if (hostname == null) throw new NullPointerException("hostname is null");
 
@@ -165,6 +168,7 @@ public abstract class Stub
                                        InetSocketAddress socketAddress)
         throws InvocationTargetException, Throwable
     {
+        System.err.println("therad[" + Thread.currentThread().getId() + "] performCreate()");
         try
         {
             if( !Validation.isRemoteInterface(c) )

@@ -61,9 +61,9 @@ public class ConnectionTest extends Test
 
         try
         {
-            System.err.println("BEFORE Stub.create(TestInterface.class, skeleton)");
+            System.err.println("<<BEFORE>> Stub.create(TestInterface.class, skeleton)");
             stub_implicit = Stub.create(TestInterface.class, skeleton);
-            System.err.println("AFTER Stub.create(TestInterface.class, skeleton)");
+            System.err.println("<<AFTER>> Stub.create(TestInterface.class, skeleton)");
         }
         catch(Throwable t)
         {
@@ -73,17 +73,17 @@ public class ConnectionTest extends Test
 
         task("connecting to skeleton using stub made from that skeleton");
 
-        System.err.println("BEFORE testStub(stub_implicit)");
+        System.err.println("<<BEFORE>> testStub(stub_implicit)");
         testStub(stub_implicit);
-        System.err.println("AFTER testStub(stub_implicit)");
+        System.err.println("<<AFTER>> testStub(stub_implicit)");
 
         task();
 
         try
         {
-            System.err.println("BEFORE Stub.create(TestInterface.class, address)");
+            System.err.println("<<BEFORE>> Stub.create(TestInterface.class, address)");
             stub_explicit = Stub.create(TestInterface.class, address);
-            System.err.println("AFTER Stub.create(TestInterface.class, address)");
+            System.err.println("<<AFTER>> Stub.create(TestInterface.class, address)");
         }
         catch(Throwable t)
         {
@@ -92,9 +92,9 @@ public class ConnectionTest extends Test
 
         task("connecting to skeleton using stub given an explicit address");
 
-        System.err.println("BEFORE testStub(stub_explicit)");
+        System.err.println("<<BEFORE>> testStub(stub_explicit)");
         testStub(stub_explicit);
-        System.err.println("AFTER testStub(stub_explicit)");
+        System.err.println("<<AFTER>> testStub(stub_explicit)");
 
         task();
     }
@@ -103,9 +103,9 @@ public class ConnectionTest extends Test
     @Override
     protected void clean()
     {
-        System.err.println("BEFORE skeleton.stop()");
+        System.err.println("<<BEFORE>> skeleton.stop()");
         skeleton.stop();
-        System.err.println("AFTER skeleton.stop()");
+        System.err.println("<<AFTER>> skeleton.stop()");
         skeleton = null;
     }
 

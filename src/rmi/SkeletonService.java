@@ -31,24 +31,25 @@ public class SkeletonService<T> {
         RMIException, InvocationTargetException, InterruptedException {
         try
         {
-            if (shuttle == null)
-            {
-                throw new RMIException("shuttle == null");
-            }
             // Get the method the Client wants to call
             Method method = findMethod(shuttle, c);
             // If the method was not found throw a RMIException
-            if (method == null)
+            if (shuttle == null || method == null)
             {
-                throw new RMIException("method is null");
+                RMIException rmiException = new RMIException(shuttle == null
+                    ? "shuttle == null" : "method == null");
+                Return ret = new Return(null, null, new InvocationTargetException(rmiException));
+                oos.writeObject(ret);
+                socket.close();
+                throw rmiException;
             }
-            currentlyInvoking++;
             if (shuttle.args == null)
             {
                 Object returnValue = method.invoke(server, new Object[0]);
                 Return ret = new Return(method.getGenericReturnType(), returnValue, null);
                 oos.writeObject(ret);
-                oos.flush();
+                socket.close();
+                return;
             }
             else
             {
@@ -64,17 +65,19 @@ public class SkeletonService<T> {
                     }
                 }
                 Object returnValue = method.invoke(server, arguments);
-                System.err.println("aaaaa");
                 Return ret = new Return(method.getGenericReturnType(), returnValue, null);
                 oos.writeObject(ret);
-
+                socket.close();
             }
         }
         catch (IOException e)
         {
+            System.err.println("IOExceptino");
+            System.err.println(e.getMessage().toString());
+            System.err.println(e.getCause().toString());
             RMIException rmiException = new RMIException(e.getMessage(), e.getCause());
             oos.writeObject(new Return(null, null, new InvocationTargetException(e)));
-            oos.flush();
+            socket.close();
             throw rmiException;
         }
         catch (Exception e)
@@ -83,7 +86,7 @@ public class SkeletonService<T> {
             System.err.println(e.getMessage());
             System.err.println(e.getCause());
             oos.writeObject(new Return(null, null, new InvocationTargetException(e)));
-            oos.flush();
+            socket.close();
             throw e;
         }
     }
