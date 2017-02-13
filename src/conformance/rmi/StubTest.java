@@ -48,6 +48,7 @@ public class StubTest extends Test
     @Override
     protected void initialize() throws TestFailed
     {
+        System.err.println("initialize()");
         address = new InetSocketAddress(7000);
         listening = true;
 
@@ -77,6 +78,7 @@ public class StubTest extends Test
     @Override
     protected void perform() throws TestFailed
     {
+        System.err.println("perform()");
         ensureUnknownHostRejected();
 
         try
@@ -104,6 +106,7 @@ public class StubTest extends Test
      */
     private void ensureStubConnects() throws TestFailed
     {
+        System.err.println("ensureStubConnects()");
         TestInterface   stub;
 
         // Create the stub.
@@ -154,6 +157,7 @@ public class StubTest extends Test
     @Override
     protected void clean()
     {
+        System.err.println("clean()");
         skeleton.stop();
 
         try
@@ -173,6 +177,7 @@ public class StubTest extends Test
      */
     private void ensureUnknownHostRejected() throws TestFailed
     {
+        System.err.println("ensureUnkownHostRejected()");
         try
         {
             TestInterface   stub = Stub.create(TestInterface.class, skeleton);
@@ -198,6 +203,7 @@ public class StubTest extends Test
      */
     private void ensureClassRejected() throws TestFailed
     {
+        System.err.println("ensureClassRejected()");
         try
         {
             Object          stub = Stub.create(Object.class, address);
@@ -222,6 +228,7 @@ public class StubTest extends Test
      */
     private void ensureNonRemoteInterfaceRejected() throws TestFailed
     {
+        System.err.println("ensureNonRemoteInterfaceRejected()");
         try
         {
             BadInterface    stub = Stub.create(BadInterface.class, address);
@@ -247,6 +254,7 @@ public class StubTest extends Test
      */
     private void ensureNullPointerExceptions() throws TestFailed
     {
+        System.err.println("ensureNullPointerExceptions()");
         // Make sure that null for the first argument is rejected.
         try
         {
@@ -369,6 +377,7 @@ public class StubTest extends Test
      */
     private void ensureLocalMethods() throws TestFailed
     {
+        System.err.println("ensureLocalMethods()");
         // Create two stubs for the same skeleton.
         TestInterface   stub1;
         TestInterface   stub2;
@@ -387,12 +396,21 @@ public class StubTest extends Test
         // reserved port range, so it is not one of the ports that the system
         // may automatically assign to the other skeletons (and therefore the
         // other two stubs).
-        TestInterface   stub3 =
-            Stub.create(TestInterface.class, new InetSocketAddress(80));
+        // TODO: WE MADE THE TRY CATCH
+        TestInterface stub3 = null;
+        try
+        {
+            stub3 = Stub.create(TestInterface.class, new InetSocketAddress(80));
+        }
+        catch (Throwable t)
+        {
+            System.err.println("stub3 caught throwable");
+        }
 
         // Check that stubs are not equal to null.
         try
         {
+            System.out.println("about to do stub1.equals(null)");
             if(stub1.equals(null))
                 throw new TestFailed("stub is reported as equal to null");
         }

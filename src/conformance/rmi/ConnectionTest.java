@@ -32,12 +32,16 @@ public class ConnectionTest extends Test
     @Override
     protected void initialize() throws TestFailed
     {
+        System.err.println("ConnectionTest.initialize()");
         address = new InetSocketAddress(7000);
+        System.err.println("about to TestSkeleton()");
         skeleton = new TestSkeleton();
 
         try
         {
+            System.err.println("about to skeleton.start()");
             skeleton.start();
+            System.err.println("finished skeleton.start()");
         }
         catch(Throwable t)
         {
@@ -57,22 +61,29 @@ public class ConnectionTest extends Test
 
         try
         {
+            System.err.println("BEFORE Stub.create(TestInterface.class, skeleton)");
             stub_implicit = Stub.create(TestInterface.class, skeleton);
+            System.err.println("AFTER Stub.create(TestInterface.class, skeleton)");
         }
         catch(Throwable t)
         {
             throw new TestFailed("unable to create stub", t);
         }
 
+
         task("connecting to skeleton using stub made from that skeleton");
 
+        System.err.println("BEFORE testStub(stub_implicit)");
         testStub(stub_implicit);
+        System.err.println("AFTER testStub(stub_implicit)");
 
         task();
 
         try
         {
+            System.err.println("BEFORE Stub.create(TestInterface.class, address)");
             stub_explicit = Stub.create(TestInterface.class, address);
+            System.err.println("AFTER Stub.create(TestInterface.class, address)");
         }
         catch(Throwable t)
         {
@@ -81,7 +92,9 @@ public class ConnectionTest extends Test
 
         task("connecting to skeleton using stub given an explicit address");
 
+        System.err.println("BEFORE testStub(stub_explicit)");
         testStub(stub_explicit);
+        System.err.println("AFTER testStub(stub_explicit)");
 
         task();
     }
@@ -90,7 +103,9 @@ public class ConnectionTest extends Test
     @Override
     protected void clean()
     {
+        System.err.println("BEFORE skeleton.stop()");
         skeleton.stop();
+        System.err.println("AFTER skeleton.stop()");
         skeleton = null;
     }
 
@@ -107,8 +122,20 @@ public class ConnectionTest extends Test
         // Attempt to get a value from the stub.
         try
         {
-            if(stub.method(false) != null)
-                throw new TestFailed("incorrect result from stub");
+            try
+            {
+                Object ret = stub.method(false);
+                if(ret != null)
+                {
+                    System.err.println("testStub()");
+                    System.err.println("ret: " + ret.toString());
+                    throw new TestFailed("incorrect result from stub");
+                }
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
         }
         catch(Throwable t)
         {

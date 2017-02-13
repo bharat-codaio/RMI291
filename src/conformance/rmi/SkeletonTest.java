@@ -48,6 +48,7 @@ public class SkeletonTest extends Test
     @Override
     protected void perform() throws TestFailed
     {
+        System.out.println("perform()");
         ensureClassRejected();
         ensureNonRemoteInterfaceRejected();
         ensureNullPointerExceptions();
@@ -62,6 +63,7 @@ public class SkeletonTest extends Test
      */
     private void ensureSkeletonRuns() throws TestFailed
     {
+        System.err.println("ensureSkeletonRuns()");
         if(probe())
             throw new TestFailed("skeleton accepts connections before start");
 
@@ -74,10 +76,14 @@ public class SkeletonTest extends Test
             throw new TestFailed("unable to start skeleton", e);
         }
 
+        System.err.println("Before (!probe())");
         if(!probe())
             throw new TestFailed("skeleton refuses connections after start");
+        System.err.println("After (!probe())");
 
+        System.err.println("BEFORE stop()");
         skeleton.stop();
+        System.err.println("AFTER stop()");
 
         synchronized(this)
         {

@@ -54,7 +54,9 @@ public class ThreadTest extends Test
         // Create the stub.
         try
         {
+            System.err.println("AAAAAA");
             stub = Stub.create(TestInterface.class, skeleton);
+            System.err.println("BBBBB");
         }
         catch(Throwable t)
         {
@@ -62,12 +64,16 @@ public class ThreadTest extends Test
         }
 
         // Start a second thread that calls rendezvous on the test server.
+        System.err.println("CCCCCC");
         new Thread(new SecondThread()).start();
+        System.err.println("DDDDDD");
 
         // Call rendezvous on the test server.
         try
         {
+            System.err.println("EEEEEEE");
             stub.rendezvous();
+            System.err.println("FFFFFFF");
         }
         catch(Throwable t)
         {

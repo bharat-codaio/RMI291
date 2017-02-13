@@ -18,8 +18,8 @@ public class TestSetup
             InetSocketAddress sockAdr = new InetSocketAddress(8080);
             Skeleton<Calculator> skeleton = new Skeleton(Calc.class, calculator, sockAdr);
             skeleton.start();
-            Calc c = Stub.create(Calc.class, sockAdr);
-            System.out.println("SQUARE OF 4 = " + c.square(4));
+//            Calc c = Stub.create(Calc.class, sockAdr);
+//            System.out.println("SQUARE OF 4 = " + c.square(4));
 
         }
         catch (RMIException e)

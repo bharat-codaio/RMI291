@@ -1,7 +1,6 @@
 package rmi;
 
 
-import java.io.IOException;
 import java.lang.reflect.*;
 import java.net.*;
 
@@ -20,12 +19,6 @@ import java.net.*;
  */
 public abstract class Stub
 {
-
-    //Member Vars
-    public String id;
-
-
-
     /** Creates a stub, given a skeleton with an assigned adress.
 
      <p>
@@ -55,18 +48,34 @@ public abstract class Stub
      this interface cannot be dynamically created.
      */
     public static <T> T create(Class<T> c, Skeleton<T> skeleton)
-            throws Exception
+            throws Throwable
     {
-
-        if (skeleton == null)
+        try
         {
-            throw new NullPointerException("skeleton is null");
+            if (c == null) throw new NullPointerException("c is null");
+            if (skeleton == null) throw new NullPointerException("skeleton is null");
+            if (!skeleton.isStarted())
+                throw new IllegalStateException("skeleton not assigned address");
+            InetAddress address = skeleton.getAddress();
+            String ip = address.getHostAddress();
+            if (ip.equals("0.0.0.0") && skeleton.getPort() != -1) {
+                InetAddress localhostAddress = InetAddress.getLocalHost();
+                if (localhostAddress == null)
+                {
+                    throw new UnknownHostException("skeleton has wildcard");
+                }
+            }
+            if (skeleton.getAddress() == null)
+                throw new IllegalStateException("skeleton doesn't address");
+            if (skeleton.getPort() == -1)
+                throw new IllegalStateException("skeleton doesn't have port");
+            return Stub.performCreate(c, skeleton, new InetSocketAddress(address,
+                skeleton.getPort()));
         }
-
-        InetSocketAddress sockAdr = skeleton.getSockAdr();
-
-        return Stub.create(c, sockAdr);
-
+        catch (Exception e)
+        {
+            throw e;
+        }
     }
 
     /** Creates a stub, given a skeleton with an assigned address and a hostname
@@ -99,40 +108,26 @@ public abstract class Stub
      <code>RMIException</code>, or if an object implementing
      this interface cannot be dynamically created.
      */
-    public static <T> T create(Class<T> c, Skeleton<T> skeleton,
-                               String hostname) throws UnknownHostException
+    public static <T> T create(Class<T> c, Skeleton<T> skeleton, String hostname)
+        throws Throwable
     {
         try {
-            if (c == null)
-            {
-                throw new NullPointerException("c is null");
-            }
-            if (skeleton == null)
-            {
-                throw new NullPointerException("skeleton is null");
-            }
-            if (hostname == null)
-            {
-                throw new NullPointerException("hostname is null");
-            }
-
-
-
-            InetSocketAddress sockAdr = skeleton.getSockAdr();
+            if (c == null) throw new NullPointerException("c is null");
+            if (skeleton == null) throw new NullPointerException("skeleton is null");
+            if (hostname == null) throw new NullPointerException("hostname is null");
 
             //createSocket
-            InetAddress address = sockAdr.getAddress();
-            int port = sockAdr.getPort();
-            Socket socket = new Socket(address, port);
+            InetAddress address = InetAddress.getByName(hostname);
+            int port = skeleton.getPort();
+            if (port == -1) throw new IllegalStateException("skeleton has no port");
+            InetSocketAddress socketAddress = new InetSocketAddress(address, port);
 
-            //TODO: Use actual value received
-            Object returnObject = null;
-            return c.cast(returnObject);
+            return Stub.performCreate(c, skeleton, socketAddress);
         }
-        catch (IOException e) {
-            throw new UnknownHostException("cannot connect socket to address and/or port");
+        catch (Throwable t)
+        {
+            throw  t;
         }
-
     }
 
     /** Creates a stub, given the address of a remote server.
@@ -152,31 +147,44 @@ public abstract class Stub
      <code>RMIException</code>, or if an object implementing
      this interface cannot be dynamically created.
      */
-    public static <T> T create(Class<T> c, InetSocketAddress address) throws Error
-    {
-        if (c == null)
-        {
-            throw new NullPointerException("c is null");
-        }
-        if (address == null)
-        {
-            throw new NullPointerException("address is null");
-        }
-        if( !Validation.isRemoteInterface(c) )
-        {
-            throw new Error("Object's Class Does Not Represent a Remote Interface");
-        }
-
+    public static <T> T create(Class<T> c, InetSocketAddress address) throws Throwable {
+        if (c == null) throw new NullPointerException("c is null");
+        if (address == null) throw new NullPointerException("address is null");
         try
         {
-            InvocationHandler handler = new StubInvocationHandler(address);
-            Class<?> proxyClass = java.lang.reflect.Proxy.getProxyClass(c.getClassLoader(), c);
-            T t = (T) proxyClass.getConstructor(InvocationHandler.class).newInstance(handler);
+            return Stub.performCreate(c, null, address);
+        }
+        catch (Throwable t)
+        {
+            throw t;
+        }
+    }
+
+
+    private static <T> T performCreate(Class<T> c, Skeleton<T> skeleton,
+                                       InetSocketAddress socketAddress)
+        throws InvocationTargetException, Throwable
+    {
+        try
+        {
+            if( !Validation.isRemoteInterface(c) )
+            {
+                throw new Error("Class Does Not Represent a Remote Interface");
+            }
+            InvocationHandler handler = new RemoteInvocationHandler(c, skeleton, socketAddress);
+            ROR ror = new ROR(handler);
+            Class<?> proxyRemoteInterface = ROR.getProxyClass(c.getClassLoader(), c);
+            T t = (T) proxyRemoteInterface.getConstructor(InvocationHandler.class)
+                .newInstance(handler);
             return t;
         }
-        catch (Exception e)
+        catch (InvocationTargetException t)
         {
-            return null;
+            throw  t.getTargetException();
+        }
+        catch (Throwable t)
+        {
+            throw t;
         }
     }
 

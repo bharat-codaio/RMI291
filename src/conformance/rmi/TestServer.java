@@ -31,6 +31,8 @@ public class TestServer implements TestInterface
     @Override
     public synchronized void rendezvous() throws RMIException
     {
+        System.err.println("rendezvous()");
+        System.err.println("thread id = " + Thread.currentThread().getId());
         // If wake is false, this thread should go to sleep. If it is true,
         // this thread should wake the sleeping thread.
         if(!wake)
