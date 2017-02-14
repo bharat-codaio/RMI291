@@ -12,12 +12,14 @@ public class Return<T> implements Serializable
     Type type;
     Object value;
     InvocationTargetException invocationTargetException;
+    RMIException rmiException;
 
-    Return(Type type, Object value, InvocationTargetException invocationTargetException)
+    Return(Type type, Object value, InvocationTargetException invocationTargetException, RMIException rmiException)
     {
         this.type = type;
         this.value = value;
         this.invocationTargetException = invocationTargetException;
+        this.rmiException = rmiException;
     }
 
 }

@@ -21,34 +21,38 @@ public class OverloadTest
 
         try
         {
-            boolean test1 = !stub.equals(3);
-            if (!test1) {
-                System.err.println("ERROR 1");
-                throw new TestFailed("unexpected result from method call - test1");
-            }
-            boolean test2 = !stub.equals(stub, 3);
-            if (!test2) {
-                System.err.println("ERROR 2");
-                throw new TestFailed("unexpected result from method call - test2");
-            }
-            boolean test3 = !stub.toString(3).equals(Integer.toString(3));
-            if (!test3)
-            {
-                System.err.println("ERROR 3");
-                throw new TestFailed("unexpected result from method call - test3");
-            };
-            boolean test4 = stub.hashCode(3) != 3;
-            if (!test4) {
-                System.err.println("ERROR 4");
-                throw new TestFailed("unexpected result from method call - test4");
-            }
-//            if(!stub.equals(3) ||
-//               !stub.equals(stub, 3) ||
-//               !stub.toString(3).equals(Integer.toString(3)) ||
-//               (stub.hashCode(3) != 3))
-//            {
-//                throw new TestFailed("unexpected result from method call");
+//            boolean test1 = !stub.equals(3);
+//            if (test1) {
+//                System.err.println("ERROR 1");
+//                throw new TestFailed("unexpected result from method call - test1");
 //            }
+//            System.err.println("test 1 success!!!!!!!!!!!!!!!!!!!!");
+//            boolean test2 = !stub.equals(stub, 3);
+//            if (test2) {
+//                System.err.println("ERROR 2");
+//                throw new TestFailed("unexpected result from method call - test2");
+//            }
+//            System.err.println("test 2 success!!!!!!!!!!!!!!!!!!!!");
+//            boolean test3 = !stub.toString(3).equals(Integer.toString(3));
+//            if (test3)
+//            {
+//                System.err.println("ERROR 3");
+//                throw new TestFailed("unexpected result from method call - test3");
+//            };
+//            System.err.println("test 3 success!!!!!!!!!!!!!!!!!!!!");
+//            boolean test4 = stub.hashCode(3) != 3;
+//            if (test4) {
+//                System.err.println("ERROR 4");
+//                throw new TestFailed("unexpected result from method call - test4");
+//            }
+//            System.err.println("test 4 success!!!!!!!!!!!!!!!!!!!!");
+            if(!stub.equals(3) ||
+               !stub.equals(stub, 3) ||
+               !stub.toString(3).equals(Integer.toString(3)) ||
+               (stub.hashCode(3) != 3))
+            {
+                throw new TestFailed("unexpected result from method call");
+            }
         }
         catch(TestFailed e) { throw e; }
         catch(Throwable t)

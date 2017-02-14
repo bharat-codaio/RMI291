@@ -113,7 +113,7 @@ public class Skeleton<T>
         if (c == null) throw new NullPointerException("c == null");
         if (server == null) throw new NullPointerException("server == null");
         if (!Validation.isRemoteInterface(c))
-            throw new Error("server's Class does not implement Remote");
+            throw new Error("server's Class does not implement Remote : " + c);
         if (address == null)
         {
             this.isLocalHost = true;

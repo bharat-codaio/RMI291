@@ -17,7 +17,9 @@ public class ROR extends Proxy
      * @throws NullPointerException if the given invocation handler, {@code h},
      *                              is {@code null}.
      */
-    protected ROR(InvocationHandler h) {
+    protected ROR(InvocationHandler h)
+    {
         super(h);
+        System.err.println("h.tostring() : " + h.toString());
     }
 }

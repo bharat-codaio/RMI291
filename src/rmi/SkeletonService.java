@@ -33,12 +33,14 @@ public class SkeletonService<T> {
         {
             // Get the method the Client wants to call
             Method method = findMethod(shuttle, c);
+            System.err.println("method found - " + method.toString());
             // If the method was not found throw a RMIException
             if (shuttle == null || method == null)
             {
                 RMIException rmiException = new RMIException(shuttle == null
                     ? "shuttle == null" : "method == null");
-                Return ret = new Return(null, null, new InvocationTargetException(rmiException));
+                Return ret = new Return(null, null, new InvocationTargetException(rmiException),
+                    null);
                 oos.writeObject(ret);
                 socket.close();
                 throw rmiException;
@@ -46,7 +48,7 @@ public class SkeletonService<T> {
             if (shuttle.args == null)
             {
                 Object returnValue = method.invoke(server, new Object[0]);
-                Return ret = new Return(method.getGenericReturnType(), returnValue, null);
+                Return ret = new Return(method.getGenericReturnType(), returnValue, null, null);
                 oos.writeObject(ret);
                 socket.close();
                 return;
@@ -65,7 +67,8 @@ public class SkeletonService<T> {
                     }
                 }
                 Object returnValue = method.invoke(server, arguments);
-                Return ret = new Return(method.getGenericReturnType(), returnValue, null);
+                System.err.println("returnValue: " + ((returnValue != null) ? returnValue.toString() : null));
+                Return ret = new Return(method.getGenericReturnType(), returnValue, null, null);
                 oos.writeObject(ret);
                 socket.close();
             }
@@ -76,32 +79,43 @@ public class SkeletonService<T> {
             System.err.println(e.getMessage().toString());
             System.err.println(e.getCause().toString());
             RMIException rmiException = new RMIException(e.getMessage(), e.getCause());
-            oos.writeObject(new Return(null, null, new InvocationTargetException(e)));
+            // TODO I CHANGED THIS from third praram  ITE constructor(e)
+            oos.writeObject(new Return(null, null, new InvocationTargetException(e), null));
             socket.close();
             throw rmiException;
+        }
+        catch (RMIException e)
+        {
+            oos.writeObject(new Return(null, null, null, e));
+            socket.close();
         }
         catch (Exception e)
         {
             System.err.println("@@@@@@@@");
             System.err.println(e.getMessage());
             System.err.println(e.getCause());
-            oos.writeObject(new Return(null, null, new InvocationTargetException(e)));
+            oos.writeObject(new Return(null, null, new InvocationTargetException(e), null));
             socket.close();
             throw e;
         }
     }
 
     Method findMethod(Shuttle shuttle, Class<T> c)
+        throws RMIException
     {
-        Method[] classMethods = c.getDeclaredMethods();
-        for (Method method : classMethods)
+        System.err.println("findMethod()");
+        Method foundMethod = null;
+        try
         {
-            if (method.hashCode() == shuttle.hashCode)
-            {
-                return method;
-            }
+            foundMethod = c.getMethod(shuttle.name, shuttle.paramTypes);
+            System.err.println("hihihihihhi");
         }
-        return null;
+        catch (Exception e)
+        {
+            RMIException rmiException = new RMIException(e.getMessage(), e.getCause());
+            throw rmiException;
+        }
+        return foundMethod;
     }
 
 

@@ -13,6 +13,7 @@ import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.Arrays;
 
 /**
  * Created by bharatbatra on 2/5/17.
@@ -100,9 +101,17 @@ public class RemoteInvocationHandler<T> implements InvocationHandler, Serializab
             {
                 throw ret.invocationTargetException;
             }
+            if (ret.rmiException != null)
+            {
+                throw ret.rmiException;
+            }
             System.err.println("hello5");
             socket.close();
             return ((Return) result).value;
+        }
+        catch (RMIException e)
+        {
+            throw e;
         }
         catch (IOException e)
         {
@@ -114,6 +123,7 @@ public class RemoteInvocationHandler<T> implements InvocationHandler, Serializab
         }
         catch (InvocationTargetException e)
         {
+            System.err.println("InvocationTargetException cause <><><><>-> " + e.getTargetException().getCause());
             throw e.getTargetException() != null
                 ? e.getTargetException().getCause()
                 : e;
@@ -181,7 +191,7 @@ public class RemoteInvocationHandler<T> implements InvocationHandler, Serializab
         if (!isSameReturnType(method, objectEquals)) return false;
         // Parameter Type
         Type paramType = method.getGenericParameterTypes()[0];
-        if (paramType.getTypeName().equals(this.getClass().getTypeName())) return false;
+        if (paramType != Object.class) return false;
         System.err.println("Method - " + method.toString());
         System.err.println("isEquals()");
         return true;

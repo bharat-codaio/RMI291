@@ -44,11 +44,11 @@ public class ConformanceTests
                          ToStringTest.class,
                          SerializableTest.class,
                          OverloadTest.class,
-//                         ShadowTest.class,
-//                         InheritanceTest.class,
-//                         SubclassTest.class,
-//                         SecurityTest.class,
-//                         conformance.rmi.ThreadTest.class
+                         ShadowTest.class,
+                         InheritanceTest.class,
+                         SubclassTest.class,
+                         SecurityTest.class,
+                         ThreadTest.class
             };
 
         Series                      series = new Series(tests);
