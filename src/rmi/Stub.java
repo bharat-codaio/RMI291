@@ -168,7 +168,6 @@ public abstract class Stub implements Serializable
                                        InetSocketAddress socketAddress)
         throws InvocationTargetException, Throwable
     {
-        System.err.println("therad[" + Thread.currentThread().getId() + "] performCreate()");
         try
         {
             if( !Validation.isRemoteInterface(c) )

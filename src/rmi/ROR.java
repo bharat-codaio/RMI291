@@ -20,6 +20,5 @@ public class ROR extends Proxy
     protected ROR(InvocationHandler h)
     {
         super(h);
-        System.err.println("h.tostring() : " + h.toString());
     }
 }

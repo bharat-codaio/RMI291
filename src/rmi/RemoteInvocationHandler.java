@@ -1,7 +1,5 @@
 package rmi;
 
-import javafx.util.Pair;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -35,7 +33,7 @@ public class RemoteInvocationHandler<T> implements InvocationHandler, Serializab
 
     public Object invoke(Object proxy, Method m, Object[] args)
         throws Throwable {
-        System.err.println("method: " + m.toString());
+        System.out.println("method: " + m.toString());
 
         String standardMethodResult = isStandardMethod(m);
         if (standardMethodResult != null)
@@ -51,15 +49,12 @@ public class RemoteInvocationHandler<T> implements InvocationHandler, Serializab
         Socket socket = null;
         try
         {
-            System.err.println("this.socketAddress: " + this.socketAddress.toString());
             socket = createSocketFromAddress(this.socketAddress);
-            System.err.println("socket: " + socket.toString());
         }
         catch (IOException e)
         {
             throw new RMIException("could not create socket from address");
         }
-        System.out.println("socket: " + socket.toString());
 
         Object result = null;
 
@@ -79,24 +74,19 @@ public class RemoteInvocationHandler<T> implements InvocationHandler, Serializab
             }
         }
 
-        System.err.println("hello0");
         Shuttle shuttle = new Shuttle(m, params);
 
         try {
             // Create ObjectInputStream from socket
             ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-            System.err.println("hello1");
             oos.flush();
             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
 
-            System.err.println("hello2");
             oos.writeObject(shuttle);
             oos.flush();
 
-            System.err.println("hello3");
             result = ois.readObject();
             Return ret = (Return) result;
-            System.err.println("hello4");
             if (ret.invocationTargetException != null)
             {
                 throw ret.invocationTargetException;
@@ -105,7 +95,6 @@ public class RemoteInvocationHandler<T> implements InvocationHandler, Serializab
             {
                 throw ret.rmiException;
             }
-            System.err.println("hello5");
             socket.close();
             return ((Return) result).value;
         }
@@ -123,7 +112,6 @@ public class RemoteInvocationHandler<T> implements InvocationHandler, Serializab
         }
         catch (InvocationTargetException e)
         {
-            System.err.println("InvocationTargetException cause <><><><>-> " + e.getTargetException().getCause());
             throw e.getTargetException() != null
                 ? e.getTargetException().getCause()
                 : e;
@@ -133,11 +121,8 @@ public class RemoteInvocationHandler<T> implements InvocationHandler, Serializab
     private static Socket createSocketFromAddress(InetSocketAddress socketAddress)
         throws IOException
     {
-        System.err.println("createSocketFromAddress");
         InetAddress adr = socketAddress.getAddress();
         int port = socketAddress.getPort();
-        System.err.println("address - " + adr.toString());
-        System.err.println("port - " + port);
         return new Socket(adr, port);
     }
 
@@ -192,8 +177,6 @@ public class RemoteInvocationHandler<T> implements InvocationHandler, Serializab
         // Parameter Type
         Type paramType = method.getGenericParameterTypes()[0];
         if (paramType != Object.class) return false;
-        System.err.println("Method - " + method.toString());
-        System.err.println("isEquals()");
         return true;
     }
 
@@ -201,12 +184,9 @@ public class RemoteInvocationHandler<T> implements InvocationHandler, Serializab
     {
         // Parameter number
         if (method.getParameterCount() != 0) return false;
-        System.out.println("PARAM COUNT : " + method.getParameterCount());
         // Return Type
         Method objectToString = getObjectMethod("toString");
         if (!isSameReturnType(method, objectToString)) return false;
-        System.err.println("Method - " + method.toString());
-        System.err.println("isToString()");
         return true;
     }
 
@@ -217,8 +197,6 @@ public class RemoteInvocationHandler<T> implements InvocationHandler, Serializab
         // Return Type
         Method objectHashCode = getObjectMethod("hashCode");
         if (!isSameReturnType(method, objectHashCode)) return false;
-        System.err.println("Method - " + method.toString());
-        System.err.println("isHashCode()");
         return true;
     }
 

@@ -32,16 +32,11 @@ public class ConnectionTest extends Test
     @Override
     protected void initialize() throws TestFailed
     {
-        System.err.println("ConnectionTest.initialize()");
         address = new InetSocketAddress(7000);
-        System.err.println("about to TestSkeleton()");
         skeleton = new TestSkeleton();
-
         try
         {
-            System.err.println("about to skeleton.start()");
             skeleton.start();
-            System.err.println("finished skeleton.start()");
         }
         catch(Throwable t)
         {

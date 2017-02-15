@@ -1,6 +1,5 @@
 package rmi;
 
-import javafx.util.Pair;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
@@ -86,8 +85,6 @@ public class Skeleton<T>
         this.c = c;
         this.isLocalHost = true;
         this.whichConstructor = "Skeleton(Class<T> c, T server)";
-        System.err.println("Skeleton Created with constructor:");
-        System.err.println(this.whichConstructor);
     }
 
     /** Creates a <code>Skeleton</code> with the given initial server address.
@@ -126,8 +123,6 @@ public class Skeleton<T>
         this.server = server;
         this.c = c;
         this.whichConstructor = "Skeleton(Class<T> c, T server, InetSocketAddress address)";
-        System.err.println("Skeleton Created with constructor:");
-        System.err.println(this.whichConstructor);
     }
 
     /** Called when the listening thread exits.
@@ -150,7 +145,6 @@ public class Skeleton<T>
      */
     protected void stopped(Throwable cause)
     {
-        System.err.println("stopped() - Thread[" + Thread.currentThread().getId() + "]");
         this.isStarted = false;
     }
 
@@ -172,9 +166,6 @@ public class Skeleton<T>
     protected boolean listen_error(Exception exception)
     {
         this.isStarted = false;
-        System.err.println("listen_error() - Thread[" + Thread.currentThread().getId() + "]");
-        System.err.println("Exception: " + exception.getClass());
-        System.err.println("Cause: " + exception.getCause());
         exception.printStackTrace();
         return false;
     }
@@ -188,9 +179,6 @@ public class Skeleton<T>
      */
     protected void service_error(RMIException exception)
     {
-        System.err.println("service_error() - Thread[" + Thread.currentThread().getId() + "]");
-        System.err.println("Exception: " + exception.getClass());
-        System.err.println("Cause: " + exception.getCause());
         exception.printStackTrace();
     }
 
@@ -209,7 +197,6 @@ public class Skeleton<T>
      */
     public synchronized void start() throws RMIException
     {
-        System.err.println("start() - Thread[" + Thread.currentThread().getId() + "]");
         print();
         if (this.isStarted()) throw new RMIException("skeleton already started");
         try
@@ -252,7 +239,6 @@ public class Skeleton<T>
                     }
                     RMIException rmiException = new RMIException(e.getMessage(), e.getCause());
                     rmiException.printStackTrace();
-                    System.err.println("[ERROR] - RMIException: " + rmiException.getCause());
                     listen_error(rmiException);
                     isStarted = false;
                     return;
@@ -268,13 +254,9 @@ public class Skeleton<T>
     private InetSocketAddress determineAddress(boolean isLocalHost, InetSocketAddress socketAddress)
         throws UnknownHostException, RMIException
     {
-        System.err.println("determineAddress() - Thread[" + Thread.currentThread().getId() + "]");
         if (isLocalHost)
         {
-            System.err.println("isLocalHost = true");
             int port = SkeletonService.findAvailablePort();
-            System.err.println("port: " + port);
-            System.err.println("address: " + InetAddress.getLocalHost());
             if (port == -1) throw new RMIException("could not find available port");
             return new InetSocketAddress(InetAddress.getLocalHost(), port);
         }
@@ -293,9 +275,7 @@ public class Skeleton<T>
      */
     public synchronized void stop()
     {
-        System.err.println("stop() - Thread[" + Thread.currentThread().getId() + "]");
         if (!this.isStarted()) {
-            System.err.println("Thread[" + Thread.currentThread().getId() + "] - not stopping, already stopped");
             return;
         }
         try
@@ -304,33 +284,25 @@ public class Skeleton<T>
             this.threads.clear();
             if (this.listenerThread != null)
             {
-                System.err.println("listenerThread is not null");
                 if (this.serverSocket != null)
                 {
-                    System.err.println("serverSocket is not null");
                     this.serverSocket.close();
                 }
                 else
                 {
-                    System.err.println("serverSocket is null");
                 }
                 this.listenerThread.interrupt();
-                System.err.println("BEFORE listenerThread.join()");
                 this.listenerThread.join();
-                System.err.println("AFTER listenerThread.join()");
             }
             else
             {
-                System.err.println("listenerThread is null");
             }
             this.isStarted = false;
             stopped(null);
-            System.err.println("FUCK THIS");
         }
         catch (Exception e)
         {
             RMIException rmiException = new RMIException(e);
-            System.err.println("[ERROR - rmiException] - " + rmiException.getCause());
             service_error(rmiException);
         }
 
@@ -339,43 +311,31 @@ public class Skeleton<T>
     Runnable createHandler(Lock lock, Condition methodInvoking, int currentlyInvoking, Class<T> c,
                            T server, Socket socket)
     {
-        System.err.println("createHandler()");
         Runnable runnable = () -> {
             try {
-                System.err.println("111111111111111111111");
                 Thread current = Thread.currentThread();
-                System.err.println("22222222222222222222");
                 ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-                System.err.println("33333333333333333333");
                 oos.flush();
-                System.err.println("44444444444444444444");
                 ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
-                System.err.println("55555555555555555555");
                 Shuttle shuttle = (Shuttle) ois.readObject();
-                System.err.println("66666666666666666666");
 
                 // handle a call from Stub for a methodCall
-                System.err.println("BEFORE handleMethodCall()");
                 skeletonService.handleMethodCall(lock, methodInvoking, currentlyInvoking, c,
                     server, socket, oos, shuttle);
-                System.err.println("AFTER handleMethodCall()");
             }
             catch (ClassNotFoundException e)
             {
                 RMIException rmiException = new RMIException(e.getMessage(), e.getCause());
                 service_error(rmiException);
-                System.err.println("[ERROR - ClassNotFoundException] - " + e.getCause());
             }
             catch (IOException e)
             {
                 RMIException rmiException = new RMIException(e.getMessage(), e.getCause());
                 service_error(rmiException);
-                System.err.println("[ERROR - IOException] - " + e.getCause());
             }
             catch (RMIException e)
             {
                 service_error(e);
-                System.err.println("[ERROR - rmiException] - " + e.getCause());
             }
             catch (Exception e)
             {
@@ -422,27 +382,10 @@ public class Skeleton<T>
     {
         String heading = "[Skeleton]==========================================================|";
         int lineLength = heading.length();
-        System.err.println(heading);
-        System.err.println(getLine("whichConstructor: " + this.whichConstructor, lineLength));
-        System.err.println(getLine("isStarted: " + this.isStarted(), lineLength));
-        if (this.socketAddress == null)
-        {
-            System.err.println(getLine("socketAddress: null", lineLength));
-        }
-        else
-        {
-            System.err.println(getLine("address: " + this.socketAddress.getAddress().toString(),
-                lineLength));
-            System.err.println(getLine("port: " + this.socketAddress.getPort(), lineLength));
-        }
-        System.err.println(getLine("listenerThread: " + this.listenerThread, lineLength));
-        System.err.println(getLine("isLocalHost: " + this.isLocalHost, lineLength));
-        System.err.println(getLine("shouldListenerRun: " + this.shouldListenerRun, lineLength));
+
         String serverSocketString = this.serverSocket == null
             ? "null"
             : this.serverSocket.toString();
-        System.err.println(getLine("serverSocket: " + serverSocketString, lineLength));
-        System.err.println(getLine("", lineLength));
     }
 
     private String getLine(String string, int lineLength)
